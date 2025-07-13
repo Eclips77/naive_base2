@@ -1,3 +1,5 @@
+from naive_bayse.app import App
+
 class Menu:
 
     def display(self):
@@ -28,7 +30,6 @@ class Menu:
                 print("Invalid choice. Try again.")
 
 
-if __name__ == "__main__":
-    from app import App
-    menu = Menu()
-    menu.display()
+# if __name__ == "__main__":
+    # menu = Menu()
+    # menu.display()
