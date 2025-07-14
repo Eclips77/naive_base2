@@ -1,7 +1,9 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from naive_bayse.app import App
-
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 app = FastAPI()
 data_app = App()
 
@@ -41,7 +43,6 @@ async def load_file(req: FileRequest):
 
     Args:
         req (FileRequest): Request containing file_name.
-
     Returns:
         dict: Status and list of columns.
     """
