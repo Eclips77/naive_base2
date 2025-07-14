@@ -12,14 +12,14 @@ class DataProcessor:
     # def get_features(self) -> pd.DataFrame:
     #     """
     #         Get the features from the DataFrame.
-    #
+    
     #         Returns:
     #             pd.DataFrame: DataFrame containing the features, or an empty DataFrame if no data is loaded.
     #         """
-    #     if self.__data is not None:
-    #         if self.__label_column in self.__data.columns:
+    #     if self.df is not None:
+    #         if self.__label_column in self.df.columns:
     #             # Drop the label column to return only features
-    #             return self.__data.drop(columns=[self.__label_column], errors='ignore')
+    #             return self.df.drop(columns=[self.__label_column], errors='ignore')
     #     return pd.DataFrame()
 
     # def get_labels(self) -> pd.Series:

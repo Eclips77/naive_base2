@@ -1,6 +1,5 @@
-# from src.server import
-# menu = Menu()
-#
-# if __name__ == "__main__":
-#     menu = Menu()
-#     menu.display()
+from src import server
+
+if __name__ == "__main__":
+    server.run()
+    
