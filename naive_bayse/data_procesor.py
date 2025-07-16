@@ -2,10 +2,25 @@ from sklearn.model_selection import train_test_split
 import pandas as pd
 
 class DataProcessor:
+    """Utility class for preprocessing datasets."""
+
     def __init__(self, df):
+        """Store a DataFrame for later processing.
+
+        Args:
+            df (pandas.DataFrame): Raw data.
+        """
         self.df = df
 
     def clean_data(self):
+        """Remove rows with missing values.
+
+        Returns:
+            pandas.DataFrame: Cleaned DataFrame.
+
+        Usage:
+            cleaned = processor.clean_data()
+        """
         self.df.dropna(inplace=True)
         return self.df
 
@@ -40,5 +55,19 @@ class DataProcessor:
     #     return pd.Series(dtype=float)
 
     def split_data(self, train_size=0.7, random_state=42):
-        train_df, test_df = train_test_split(self.df, train_size=train_size, random_state=random_state)
+        """Split the dataset into train and test parts.
+
+        Args:
+            train_size (float): Fraction of data to use for training.
+            random_state (int): Random seed for reproducibility.
+
+        Returns:
+            Tuple[pandas.DataFrame, pandas.DataFrame]: Train and test sets.
+
+        Usage:
+            train_df, test_df = processor.split_data()
+        """
+        train_df, test_df = train_test_split(
+            self.df, train_size=train_size, random_state=random_state
+        )
         return train_df, test_df

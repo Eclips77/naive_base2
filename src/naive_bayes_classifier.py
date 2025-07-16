@@ -1,13 +1,28 @@
 class NaiveBayesClassifier:
+    """Simple categorical Naive Bayes classifier."""
+
     def __init__(self):
+        """Initialize empty model structures."""
+        # Stores conditional probabilities for each feature value
         self.model = {}
+        # Prior probabilities for each class
         self.priors = {}
+        # List of possible class labels
         self.classes = []
 
 
     def fit(self, df, target_column):
+        """Train the classifier.
+
+        Args:
+            df (pandas.DataFrame): The full dataset including the target.
+            target_column (str): Name of the label column.
+
+        Usage:
+            classifier.fit(training_df, "label")
+        """
         target_variable = df[target_column]
-        feature_cols = df.drop(columns=[target_column],axis=1)
+        feature_cols = df.drop(columns=[target_column], axis=1)
         self.classes = target_variable.unique()
         self.priors = df[target_column].value_counts(normalize=True).to_dict()
 
@@ -29,6 +44,17 @@ class NaiveBayesClassifier:
 
 
     def classify(self, record):
+        """Classify a single record.
+
+        Args:
+            record (dict): Mapping of feature names to values.
+
+        Returns:
+            str: Predicted class label.
+
+        Usage:
+            label = classifier.classify({"age": "30", "gender": "M"})
+        """
         prob_yes = self.priors[self.classes[0]]
         prob_no = self.priors[self.classes[1]]
 
