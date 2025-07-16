@@ -1,8 +1,16 @@
 from naive_bayse.app import App
 
+
 class Menu:
+    """Simple CLI menu for interacting with :class:`App`."""
 
     def display(self):
+        """Show the menu loop until the user exits.
+
+        Usage:
+            menu = Menu()
+            menu.display()
+        """
         while True:
             print("\n--- Naive Bayes Classifier Menu ---")
             print("1. Load & clean data")
