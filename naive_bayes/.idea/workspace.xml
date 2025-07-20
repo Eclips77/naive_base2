@@ -38,7 +38,7 @@
 }]]></component>
   <component name="GithubPullRequestsUISettings"><![CDATA[{
   "selectedUrlAndAccountId": {
-    "url": "https://github.com/SHLOMO2096/naive_bayse.git",
+    "url": "https://github.com/SHLOMO2096/naive_bayes.git",
     "accountId": "890f91bc-cc94-4aa1-8fd0-a8c7d583af71"
   }
 }]]></component>
@@ -54,7 +54,7 @@
   <component name="PropertiesComponent"><![CDATA[{
   "keyToString": {
     "Python.app.executor": "Run",
-    "Python.data_procesor.executor": "Run",
+    "Python.data_processor.executor": "Run",
     "Python.evaluator.executor": "Run",
     "Python.main.executor": "Run",
     "Python.menu.executor": "Run",

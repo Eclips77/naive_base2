@@ -1,4 +1,4 @@
-from naive_bayse.app import App
+from naive_bayes.app import App
 
 
 class Menu:
