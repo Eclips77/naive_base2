@@ -1,7 +1,7 @@
 import os
-from naive_bayse.data_loader import DataLoader
+from naive_bayes.data_loader import DataLoader
 from src.naive_bayes_classifier import NaiveBayesClassifier
-from naive_bayse.data_procesor import DataProcessor
+from naive_bayes.data_processor import DataProcessor
 from src.evaluator import Evaluator
 
 
