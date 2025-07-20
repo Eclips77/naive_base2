@@ -1,6 +1,6 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from naive_bayse.app import App
+from naive_bayes.app import App
 import uvicorn
 import sys
 import os
