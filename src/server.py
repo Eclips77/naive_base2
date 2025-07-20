@@ -18,6 +18,9 @@ class LabelRequest(BaseModel):
 class RecordRequest(BaseModel):
     record: dict
 
+class PathRequest(BaseModel):
+    path: str
+
 @app.get("/")
 async def root():
     """Root endpoint to verify that the API is running.
@@ -100,7 +103,7 @@ async def get_features():
 
 @app.post("/train")
 async def train_model():
-    """Train the model using the selected target column.
+    """Train the model using the selected target column and save it to ``model.pkl``.
 
     Returns:
         dict: Status message.
@@ -144,6 +147,27 @@ async def predict(req: RecordRequest):
     """
     try:
         return data_app.classify_record(req.record)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=str(e))
+
+@app.post("/load_model")
+async def load_model(req: PathRequest):
+    """Load a previously saved classifier from disk.
+
+    Args:
+        req (PathRequest): Path to the pickle file.
+
+    Returns:
+        dict: Status message.
+
+    Usage:
+        curl -X POST -H "Content-Type: application/json" \
+            -d '{"path": "model.pkl"}' http://localhost:8000/load_model
+    """
+    try:
+        return data_app.load_model(req.path)
+    except FileNotFoundError as e:
+        raise HTTPException(status_code=404, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 

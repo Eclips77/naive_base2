@@ -1,4 +1,5 @@
 import os
+import pickle
 from naive_bayse.data_loader import DataLoader
 from src.naive_bayes_classifier import NaiveBayesClassifier
 from naive_bayse.data_procesor import DataProcessor
@@ -104,7 +105,18 @@ class App:
         if self.target_column is None:
             raise ValueError("Target column not set.")
         self.classifier.fit(self.train_df, self.target_column)
-        return {"status": "success", "message": "Model trained successfully."}
+
+        # Save the trained classifier to disk so it can be reused later
+        base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        model_path = os.path.join(base_dir, "model.pkl")
+        with open(model_path, "wb") as f:
+            pickle.dump(self.classifier, f)
+
+        return {
+            "status": "success",
+            "message": "Model trained and saved successfully.",
+            "model_path": model_path,
+        }
 
     def evaluate_model(self):
         """Evaluate the trained model using the test dataset.
@@ -141,3 +153,21 @@ class App:
             raise ValueError("Target column not set.")
         prediction = self.classifier.classify(record)
         return {"prediction": prediction}
+
+    def load_model(self, path: str):
+        """Load a previously saved classifier from disk.
+
+        Args:
+            path (str): Path to the pickle file containing the model.
+
+        Returns:
+            dict: Status message indicating success.
+
+        Usage:
+            app.load_model("model.pkl")
+        """
+        if not os.path.isfile(path):
+            raise FileNotFoundError(f"Model file '{path}' does not exist.")
+        with open(path, "rb") as f:
+            self.classifier = pickle.load(f)
+        return {"status": "success", "message": f"Model loaded from {path}"}
