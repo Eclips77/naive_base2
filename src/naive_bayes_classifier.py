@@ -1,72 +1,57 @@
-class NaiveBayesClassifier:
-    """Simple categorical Naive Bayes classifier."""
-
-    def __init__(self):
-        """Initialize empty model structures."""
-        # Stores conditional probabilities for each feature value
-        self.model = {}
-        # Prior probabilities for each class
-        self.priors = {}
-        # List of possible class labels
-        self.classes = []
+from typing import Dict, Any
+import math
 
 
-    def fit(self, df, target_column):
-        """Train the classifier.
+class NaiveBayesPredictor:
+    """
+    Predict class labels for categorical samples using a serialized Naive Bayes model.
 
-        Args:
-            df (pandas.DataFrame): The full dataset including the target.
-            target_column (str): Name of the label column.
+    Parameters
+    ----------
+    model : dict
+        Dictionary produced by `NaiveBayesTrainer.fit` or `load_model` containing:
+        - "priors": prior probabilities for each class
+        - "likelihoods": nested mapping feature → value → class → P(value|class)
+        - "classes": list of class labels
+    """
 
-        Usage:
-            classifier.fit(training_df, "label")
+    _EPS = 1e-9  # minimal probability to avoid log(0)
+
+    def __init__(self, model: Dict[str, Any]) -> None:
+        self.model = model
+        self.classes = model["classes"]
+        self.priors = model["priors"]
+        self.likelihoods = model["likelihoods"]
+
+    def _safe_log(self, p: float) -> float:
+        """Return log‑probability, clamped to avoid −inf."""
+        return math.log(p if p > 0 else self._EPS)
+
+    def predict(self, sample: Dict[str, Any]) -> Any:
         """
-        target_variable = df[target_column]
-        feature_cols = df.drop(columns=[target_column], axis=1)
-        self.classes = target_variable.unique()
-        self.priors = df[target_column].value_counts(normalize=True).to_dict()
+        Predict the most probable class for a single sample.
 
+        Parameters
+        ----------
+        sample : dict
+            Mapping of feature name → categorical value.
 
-        for col in feature_cols:
-            self.model[col] = {}
-            unique_values = feature_cols[col].unique()
-            for value in unique_values:
-                self.model[col][value] = {}
-                yes_count = len(df[(df[col] == value) & (target_variable == self.classes[0])]) +1
-                no_count = len(df[(df[col] == value) & (target_variable == self.classes[1])]) +1
-                self.model[col][value] = {self.classes[0]: yes_count, self.classes[1]: no_count}
-
-                total_yes = (target_variable == self.classes[0]).sum() + len(unique_values)
-                total_no = (target_variable == self.classes[1]).sum() + len(unique_values)
-
-                self.model[col][value][f'P({self.classes[0]}|X)'] = yes_count / total_yes
-                self.model[col][value][f'P({self.classes[1]}|X)'] = no_count / total_no
-
-
-    def classify(self, record):
-        """Classify a single record.
-
-        Args:
-            record (dict): Mapping of feature names to values.
-
-        Returns:
-            str: Predicted class label.
-
-        Usage:
-            label = classifier.classify({"age": "30", "gender": "M"})
+        Returns
+        -------
+        Any
+            Predicted class label.
         """
-        prob_yes = self.priors[self.classes[0]]
-        prob_no = self.priors[self.classes[1]]
+        # initialise with log‑priors
+        log_probs = {
+            c: self._safe_log(self.priors.get(str(c), self._EPS)) for c in self.classes
+        }
 
-        for col in record:
-            value = record[col]
-            if value in self.model[col]:
-                prob_yes *= self.model[col][value][f'P({self.classes[0]}|X)']
-                prob_no *= self.model[col][value][f'P({self.classes[1]}|X)']
-        # print(f"Probabilities: P({self.classes[0]}|X) = {prob_yes}, P({self.classes[1]}|X) = {prob_no}")
-        return self.classes[0] if prob_yes > prob_no else self.classes[1]
+        # accumulate log‑likelihoods per feature
+        for feature, value in sample.items():
+            value_likelihoods = self.likelihoods.get(feature, {})
+            for c in self.classes:
+                prob = value_likelihoods.get(value, {}).get(str(c), self._EPS)
+                log_probs[c] += self._safe_log(prob)
 
-
-
-
-
+        # return class with highest posterior
+        return max(log_probs, key=log_probs.get)

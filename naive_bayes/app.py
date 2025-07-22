@@ -2,7 +2,7 @@ import os
 from naive_bayes.data_loader import DataLoader
 from src.naive_bayes_classifier import NaiveBayesClassifier
 from naive_bayes.data_processor import DataProcessor
-from src.evaluator import Evaluator
+from src.model_evaluator import Evaluator
 
 
 class App:
