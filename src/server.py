@@ -9,6 +9,24 @@ sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 app = FastAPI()
 data_app = App()
 
+# Automatically load data and train the model when the server starts
+@app.on_event("startup")
+async def startup_event():
+    """Load data, set the target column and train the model on startup."""
+    # Default CSV file name can be overridden with DATA_FILE environment variable
+    file_name = os.getenv("DATA_FILE", "play_tennis.csv")
+    try:
+        # Load and clean the dataset
+        data_app.load_and_clean(file_name)
+        # Use the last column as the target by default
+        target = data_app.train_df.columns[-1]
+        data_app.set_target_column(target)
+        # Train the model so the API is ready to serve predictions
+        data_app.train_model()
+    except Exception as e:
+        # Log any issue during startup but allow the server to keep running
+        print(f"Failed to initialise model: {e}")
+
 class FileRequest(BaseModel):
     file_name: str
 
