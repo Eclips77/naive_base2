@@ -119,8 +119,8 @@ class App:
             raise ValueError("No test data loaded.")
         if self.target_column is None:
             raise ValueError("Target column not set.")
-        evaluator = Evaluator()
-        accuracy = evaluator.evaluate(self.classifier, self.test_df, self.target_column)
+        evaluator = Evaluator(self.classifier.model)
+        accuracy = evaluator.evaluate(self.test_df, self.target_column)
         return {"accuracy": accuracy}
 
     def classify_record(self, record: dict):
@@ -141,3 +141,5 @@ class App:
             raise ValueError("Target column not set.")
         prediction = self.classifier.classify(record)
         return {"prediction": prediction}
+
+
