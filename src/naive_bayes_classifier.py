@@ -1,5 +1,6 @@
 from typing import Dict, Any
 import math
+import pandas as pd
 
 
 class NaiveBayesPredictor:
@@ -55,3 +56,27 @@ class NaiveBayesPredictor:
 
         # return class with highest posterior
         return max(log_probs, key=log_probs.get)
+
+
+class NaiveBayesClassifier:
+    """High level wrapper combining training and prediction."""
+
+    def __init__(self) -> None:
+        self.model: Dict[str, Any] = {}
+
+    def fit(self, df: "pd.DataFrame", target_column: str) -> Dict[str, Any]:
+        """Train a Naive Bayes model on ``df`` using ``target_column``."""
+        from .model_trainer import NaiveBayesTrainer
+
+        trainer = NaiveBayesTrainer()
+        self.model = trainer.fit(df, target_column)
+        return self.model
+
+    def classify(self, record: Dict[str, Any]) -> Any:
+        """Predict a single ``record`` using the trained model."""
+        if not self.model:
+            raise ValueError("Model has not been trained yet.")
+
+        predictor = NaiveBayesPredictor(self.model)
+        return predictor.predict(record)
+
