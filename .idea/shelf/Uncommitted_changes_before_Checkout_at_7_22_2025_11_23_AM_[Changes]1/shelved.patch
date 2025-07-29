@@ -1,0 +1,178 @@
+Index: naive_bayes/app.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>import os\r\nfrom naive_bayes.data_loader import DataLoader\r\nfrom src.naive_bayes_classifier import NaiveBayesPredictor\r\nfrom naive_bayes.data_processor import DataProcessor\r\nfrom src.model_evaluator import NaiveBayesEvaluator\r\n\r\n\r\nclass App:\r\n    def __init__(self):\r\n        \"\"\"Initialize the App with no loaded data or target column.\"\"\"\r\n        self.classifier = NaiveBayesPredictor()\r\n        self.train_df = None\r\n        self.test_df = None\r\n        self.target_column = None\r\n\r\n    def list_available_files(self):\r\n        \"\"\"List all files available in the Data directory.\r\n\r\n        Returns:\r\n            List[str]: A list of CSV file names.\r\n\r\n        Usage:\r\n            files = app.list_available_files()\r\n        \"\"\"\r\n        BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))\r\n        data_dir = os.path.join(BASE_DIR, \"Data\")\r\n        return [f for f in os.listdir(data_dir)]\r\n\r\n    def load_and_clean(self, selected_file_name):\r\n        \"\"\"Load the selected CSV file, clean it and split into train/test.\r\n\r\n        Args:\r\n            selected_file_name (str): Name of the CSV file to load.\r\n\r\n        Returns:\r\n            dict: Status message and list of column names.\r\n\r\n        Usage:\r\n            app.load_and_clean(\"data.csv\")\r\n        \"\"\"\r\n        BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))\r\n        data_dir = os.path.join(BASE_DIR, \"Data\")\r\n        selected_file = os.path.join(data_dir, selected_file_name)\r\n\r\n        if not os.path.isfile(selected_file):\r\n            raise FileNotFoundError(f\"File '{selected_file_name}' not found in Data folder.\")\r\n\r\n        df = DataLoader.load_data(selected_file)\r\n        processor = DataProcessor(df)\r\n        processor.clean_data()\r\n        self.train_df, self.test_df = processor.split_data()\r\n        return {\"status\": \"success\", \"columns\": self.train_df.columns.tolist()}\r\n\r\n    def set_target_column(self, column_name):\r\n        \"\"\"Set the target column to be used as labels for training and prediction.\r\n\r\n        Args:\r\n            column_name (str): Name of the column to use as target.\r\n\r\n        Returns:\r\n            dict: Status message with the selected target column.\r\n\r\n        Usage:\r\n            app.set_target_column(\"label\")\r\n        \"\"\"\r\n        if self.train_df is None:\r\n            raise ValueError(\"No data loaded yet.\")\r\n        if column_name not in self.train_df.columns:\r\n            raise ValueError(f\"Column '{column_name}' does not exist.\")\r\n        self.target_column = column_name\r\n        return {\"status\": \"success\", \"target_column\": self.target_column}\r\n\r\n    def get_features_with_values(self):\r\n        \"\"\"Get all feature columns (excluding the target) with their unique possible values.\r\n\r\n        Returns:\r\n            dict: Mapping from feature name to list of unique values.\r\n\r\n        Usage:\r\n            features = app.get_features_with_values()\r\n        \"\"\"\r\n        if self.train_df is None:\r\n            raise ValueError(\"No training data loaded.\")\r\n        if self.target_column is None:\r\n            raise ValueError(\"Target column not set.\")\r\n\r\n        features = {}\r\n        for col in self.train_df.columns:\r\n            if col != self.target_column:\r\n                features[col] = sorted(self.train_df[col].unique().tolist())\r\n        return features\r\n\r\n    def train_model(self):\r\n        \"\"\"Train the Naive Bayes classifier on the loaded training data.\r\n\r\n        Returns:\r\n            dict: Status message.\r\n\r\n        Usage:\r\n            app.train_model()\r\n        \"\"\"\r\n        if self.train_df is None:\r\n            raise ValueError(\"No training data loaded.\")\r\n        if self.target_column is None:\r\n            raise ValueError(\"Target column not set.\")\r\n        self.classifier.fit(self.train_df, self.target_column)\r\n        return {\"status\": \"success\", \"message\": \"Model trained successfully.\"}\r\n\r\n    def evaluate_model(self):\r\n        \"\"\"Evaluate the trained model using the test dataset.\r\n\r\n        Returns:\r\n            dict: Accuracy score.\r\n\r\n        Usage:\r\n            app.evaluate_model()\r\n        \"\"\"\r\n        if self.test_df is None:\r\n            raise ValueError(\"No test data loaded.\")\r\n        if self.target_column is None:\r\n            raise ValueError(\"Target column not set.\")\r\n        evaluator = Evaluator(self.classifier.model)\r\n        accuracy = evaluator.evaluate(self.test_df, self.target_column)\r\n        return {\"accuracy\": accuracy}\r\n\r\n    def classify_record(self, record: dict):\r\n        \"\"\"Classify a new record using the trained model.\r\n\r\n        Args:\r\n            record (dict): Dictionary of feature values.\r\n\r\n        Returns:\r\n            dict: Prediction result.\r\n\r\n        Usage:\r\n            result = app.classify_record(record)\r\n        \"\"\"\r\n        if self.train_df is None:\r\n            raise ValueError(\"No data loaded.\")\r\n        if self.target_column is None:\r\n            raise ValueError(\"Target column not set.\")\r\n        prediction = self.classifier.classify(record)\r\n        return {\"prediction\": prediction}\r\n\r\n\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/naive_bayes/app.py b/naive_bayes/app.py
+--- a/naive_bayes/app.py	(revision a704a34931b2a407ac350746e84c5d1af1010617)
++++ b/naive_bayes/app.py	(date 1753167545563)
+@@ -1,14 +1,14 @@
+ import os
+ from naive_bayes.data_loader import DataLoader
+-from src.naive_bayes_classifier import NaiveBayesPredictor
++from src.model_trainer import NaiveBayesTrainer
+ from naive_bayes.data_processor import DataProcessor
+-from src.model_evaluator import NaiveBayesEvaluator
+-
++from src.model_evaluator import Evaluator
++from src.naive_bayes_classifier import NaiveBayesPredictor
+ 
+ class App:
+     def __init__(self):
+         """Initialize the App with no loaded data or target column."""
+-        self.classifier = NaiveBayesPredictor()
++        self.trainer = NaiveBayesTrainer()
+         self.train_df = None
+         self.test_df = None
+         self.target_column = None
+@@ -103,7 +103,7 @@
+             raise ValueError("No training data loaded.")
+         if self.target_column is None:
+             raise ValueError("Target column not set.")
+-        self.classifier.fit(self.train_df, self.target_column)
++        self.trainer.fit(self.train_df, self.target_column)
+         return {"status": "success", "message": "Model trained successfully."}
+ 
+     def evaluate_model(self):
+@@ -119,7 +119,7 @@
+             raise ValueError("No test data loaded.")
+         if self.target_column is None:
+             raise ValueError("Target column not set.")
+-        evaluator = Evaluator(self.classifier.model)
++        evaluator = Evaluator(self.trainer.model)
+         accuracy = evaluator.evaluate(self.test_df, self.target_column)
+         return {"accuracy": accuracy}
+ 
+@@ -139,7 +139,7 @@
+             raise ValueError("No data loaded.")
+         if self.target_column is None:
+             raise ValueError("Target column not set.")
+-        prediction = self.classifier.classify(record)
++        prediction = self.trainer.classify(record)
+         return {"prediction": prediction}
+ 
+ 
+Index: src/naive_bayes_classifier.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>from typing import Dict, Any\r\nimport math\r\nimport pandas as pd\r\n\r\n\r\nclass NaiveBayesPredictor:\r\n    \"\"\"\r\n    Predict class labels for categorical samples using a serialized Naive Bayes model.\r\n\r\n    Parameters\r\n    ----------\r\n    model : dict\r\n        Dictionary produced by `NaiveBayesTrainer.fit` or `load_model` containing:\r\n        - \"priors\": prior probabilities for each class\r\n        - \"likelihoods\": nested mapping feature → value → class → P(value|class)\r\n        - \"classes\": list of class labels\r\n    \"\"\"\r\n\r\n    _EPS = 1e-9  # minimal probability to avoid log(0)\r\n\r\n    def __init__(self, model: Dict[str, Any]) -> None:\r\n        self.model = model\r\n        self.classes = model[\"classes\"]\r\n        self.priors = model[\"priors\"]\r\n        self.likelihoods = model[\"likelihoods\"]\r\n\r\n    def _safe_log(self, p: float) -> float:\r\n        \"\"\"Return log‑probability, clamped to avoid −inf.\"\"\"\r\n        return math.log(p if p > 0 else self._EPS)\r\n\r\n    def predict(self, sample: Dict[str, Any]) -> Any:\r\n        \"\"\"\r\n        Predict the most probable class for a single sample.\r\n\r\n        Parameters\r\n        ----------\r\n        sample : dict\r\n            Mapping of feature name → categorical value.\r\n\r\n        Returns\r\n        -------\r\n        Any\r\n            Predicted class label.\r\n        \"\"\"\r\n        # initialise with log‑priors\r\n        log_probs = {\r\n            c: self._safe_log(self.priors.get(str(c), self._EPS)) for c in self.classes\r\n        }\r\n\r\n        # accumulate log‑likelihoods per feature\r\n        for feature, value in sample.items():\r\n            value_likelihoods = self.likelihoods.get(feature, {})\r\n            for c in self.classes:\r\n                prob = value_likelihoods.get(value, {}).get(str(c), self._EPS)\r\n                log_probs[c] += self._safe_log(prob)\r\n\r\n        # return class with highest posterior\r\n        return max(log_probs, key=log_probs.get)\r\n\r\n\r\nclass NaiveBayesClassifier:\r\n    \"\"\"High level wrapper combining training and prediction.\"\"\"\r\n\r\n    def __init__(self) -> None:\r\n        self.model: Dict[str, Any] = {}\r\n\r\n    def fit(self, df: \"pd.DataFrame\", target_column: str) -> Dict[str, Any]:\r\n        \"\"\"Train a Naive Bayes model on ``df`` using ``target_column``.\"\"\"\r\n        from .model_trainer import NaiveBayesTrainer\r\n\r\n        trainer = NaiveBayesTrainer()\r\n        self.model = trainer.fit(df, target_column)\r\n        return self.model\r\n\r\n    def classify(self, record: Dict[str, Any]) -> Any:\r\n        \"\"\"Predict a single ``record`` using the trained model.\"\"\"\r\n        if not self.model:\r\n            raise ValueError(\"Model has not been trained yet.\")\r\n\r\n        predictor = NaiveBayesPredictor(self.model)\r\n        return predictor.predict(record)\r\n\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/src/naive_bayes_classifier.py b/src/naive_bayes_classifier.py
+--- a/src/naive_bayes_classifier.py	(revision a704a34931b2a407ac350746e84c5d1af1010617)
++++ b/src/naive_bayes_classifier.py	(date 1753167545547)
+@@ -1,6 +1,5 @@
+ from typing import Dict, Any
+ import math
+-import pandas as pd
+ 
+ 
+ class NaiveBayesPredictor:
+@@ -58,25 +57,5 @@
+         return max(log_probs, key=log_probs.get)
+ 
+ 
+-class NaiveBayesClassifier:
+-    """High level wrapper combining training and prediction."""
+-
+-    def __init__(self) -> None:
+-        self.model: Dict[str, Any] = {}
+-
+-    def fit(self, df: "pd.DataFrame", target_column: str) -> Dict[str, Any]:
+-        """Train a Naive Bayes model on ``df`` using ``target_column``."""
+-        from .model_trainer import NaiveBayesTrainer
+-
+-        trainer = NaiveBayesTrainer()
+-        self.model = trainer.fit(df, target_column)
+-        return self.model
+ 
+-    def classify(self, record: Dict[str, Any]) -> Any:
+-        """Predict a single ``record`` using the trained model."""
+-        if not self.model:
+-            raise ValueError("Model has not been trained yet.")
+-
+-        predictor = NaiveBayesPredictor(self.model)
+-        return predictor.predict(record)
+ 
+Index: src/server.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>from fastapi import FastAPI, HTTPException\r\nfrom pydantic import BaseModel\r\nfrom naive_bayes.app import App\r\nimport uvicorn\r\nimport sys\r\nimport os\r\n\r\nsys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))\r\napp = FastAPI()\r\ndata_app = App()\r\n\r\nclass FileRequest(BaseModel):\r\n    file_name: str\r\n\r\nclass LabelRequest(BaseModel):\r\n    target_column: str\r\n\r\nclass RecordRequest(BaseModel):\r\n    record: dict\r\n\r\n@app.get(\"/\")\r\nasync def root():\r\n    \"\"\"Root endpoint to verify that the API is running.\r\n\r\n    Usage:\r\n        curl http://localhost:8000/\r\n    \"\"\"\r\n    return {\"message\": \"Welcome to the Naive Bayes Classifier API\"}\r\n\r\n@app.get(\"/available_files\")\r\nasync def available_files():\r\n    \"\"\"Get a list of available CSV files.\r\n\r\n    Returns:\r\n        dict: List of file names.\r\n\r\n    Usage:\r\n        curl http://localhost:8000/available_files\r\n    \"\"\"\r\n    files = data_app.list_available_files()\r\n    if not files:\r\n        raise HTTPException(status_code=404, detail=\"No CSV files found.\")\r\n    return {\"files\": files}\r\n\r\n@app.post(\"/load_file\")\r\nasync def load_file(req: FileRequest):\r\n    \"\"\"Load the selected file and return available columns.\r\n\r\n    Args:\r\n        req (FileRequest): Request containing file_name.\r\n    Returns:\r\n        dict: Status and list of columns.\r\n\r\n    Usage:\r\n        curl -X POST -H \"Content-Type: application/json\" \\\r\n            -d '{\"file_name\": \"data.csv\"}' http://localhost:8000/load_file\r\n    \"\"\"\r\n    try:\r\n        result = data_app.load_and_clean(req.file_name)\r\n        return result\r\n    except FileNotFoundError as e:\r\n        raise HTTPException(status_code=404, detail=str(e))\r\n    except Exception as e:\r\n        raise HTTPException(status_code=400, detail=str(e))\r\n\r\n@app.post(\"/set_target_column\")\r\nasync def set_target_column(req: LabelRequest):\r\n    \"\"\"Set the target column for labels.\r\n\r\n    Args:\r\n        req (LabelRequest): Request containing target_column.\r\n\r\n    Returns:\r\n        dict: Status message.\r\n\r\n    Usage:\r\n        curl -X POST -H \"Content-Type: application/json\" \\\r\n            -d '{\"target_column\": \"label\"}' http://localhost:8000/set_target_column\r\n    \"\"\"\r\n    try:\r\n        result = data_app.set_target_column(req.target_column)\r\n        return result\r\n    except ValueError as e:\r\n        raise HTTPException(status_code=400, detail=str(e))\r\n\r\n@app.get(\"/features\")\r\nasync def get_features():\r\n    \"\"\"Get feature columns (excluding target) with unique values.\r\n\r\n    Returns:\r\n        dict: Mapping from feature names to unique values.\r\n\r\n    Usage:\r\n        curl http://localhost:8000/features\r\n    \"\"\"\r\n    try:\r\n        return data_app.get_features_with_values()\r\n    except Exception as e:\r\n        raise HTTPException(status_code=400, detail=str(e))\r\n\r\n@app.post(\"/train\")\r\nasync def train_model():\r\n    \"\"\"Train the model using the selected target column.\r\n\r\n    Returns:\r\n        dict: Status message.\r\n\r\n    Usage:\r\n        curl -X POST http://localhost:8000/train\r\n    \"\"\"\r\n    try:\r\n        return data_app.train_model()\r\n    except Exception as e:\r\n        raise HTTPException(status_code=400, detail=str(e))\r\n\r\n@app.get(\"/accuracy\")\r\nasync def get_accuracy():\r\n    \"\"\"Get the accuracy of the trained model.\r\n\r\n    Returns:\r\n        dict: Accuracy score.\r\n\r\n    Usage:\r\n        curl http://localhost:8000/accuracy\r\n    \"\"\"\r\n    try:\r\n        return data_app.evaluate_model()\r\n    except Exception as e:\r\n        raise HTTPException(status_code=400, detail=str(e))\r\n\r\n@app.post(\"/predict\")\r\nasync def predict(req: RecordRequest):\r\n    \"\"\"Predict the class of a new record.\r\n\r\n    Args:\r\n        req (RecordRequest): Request containing record dictionary.\r\n\r\n    Returns:\r\n        dict: Prediction result.\r\n\r\n    Usage:\r\n        curl -X POST -H \"Content-Type: application/json\" \\\r\n            -d '{\"record\": {\"feature\": \"value\"}}' http://localhost:8000/predict\r\n    \"\"\"\r\n    try:\r\n        return data_app.classify_record(req.record)\r\n    except Exception as e:\r\n        raise HTTPException(status_code=400, detail=str(e))\r\n\r\nif __name__ == \"__main__\":\r\n\r\n    uvicorn.run(\"src.server:app\", host=\"127.0.0.1\", port=8000, reload=True)\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/src/server.py b/src/server.py
+--- a/src/server.py	(revision a704a34931b2a407ac350746e84c5d1af1010617)
++++ b/src/server.py	(date 1753166771216)
+@@ -2,10 +2,7 @@
+ from pydantic import BaseModel
+ from naive_bayes.app import App
+ import uvicorn
+-import sys
+-import os
+ 
+-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+ app = FastAPI()
+ data_app = App()
+ 
+Index: .idea/naive_base2.iml
+===================================================================
+diff --git a/.idea/naive_base2.iml b/.idea/naive_base2.iml
+new file mode 100644
+--- /dev/null	(date 1753166941720)
++++ b/.idea/naive_base2.iml	(date 1753166941720)
+@@ -0,0 +1,7 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<module version="4">
++  <component name="PyDocumentationSettings">
++    <option name="format" value="PLAIN" />
++    <option name="myDocStringFormat" value="Plain" />
++  </component>
++</module>
+\ No newline at end of file
+Index: .idea/misc.xml
+===================================================================
+diff --git a/.idea/misc.xml b/.idea/misc.xml
+new file mode 100644
+--- /dev/null	(date 1753166941729)
++++ b/.idea/misc.xml	(date 1753166941729)
+@@ -0,0 +1,7 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project version="4">
++  <component name="Black">
++    <option name="sdkName" value="Python 3.13 (naive_base2)" />
++  </component>
++  <component name="ProjectRootManager" version="2" project-jdk-name="Python 3.13 (naive_base2)" project-jdk-type="Python SDK" />
++</project>
+\ No newline at end of file
+Index: .idea/inspectionProfiles/profiles_settings.xml
+===================================================================
+diff --git a/.idea/inspectionProfiles/profiles_settings.xml b/.idea/inspectionProfiles/profiles_settings.xml
+new file mode 100644
+--- /dev/null	(date 1753166941735)
++++ b/.idea/inspectionProfiles/profiles_settings.xml	(date 1753166941735)
+@@ -0,0 +1,6 @@
++<component name="InspectionProjectProfileManager">
++  <settings>
++    <option name="USE_PROJECT_PROFILE" value="false" />
++    <version value="1.0" />
++  </settings>
++</component>
+\ No newline at end of file
+Index: .idea/vcs.xml
+===================================================================
+diff --git a/.idea/vcs.xml b/.idea/vcs.xml
+new file mode 100644
+--- /dev/null	(date 1753166941757)
++++ b/.idea/vcs.xml	(date 1753166941757)
+@@ -0,0 +1,6 @@
++<?xml version="1.0" encoding="UTF-8"?>
++<project version="4">
++  <component name="VcsDirectoryMappings">
++    <mapping directory="" vcs="Git" />
++  </component>
++</project>
+\ No newline at end of file

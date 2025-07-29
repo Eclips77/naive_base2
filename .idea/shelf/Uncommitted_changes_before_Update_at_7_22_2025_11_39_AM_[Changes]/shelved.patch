@@ -1,0 +1,107 @@
+Index: src/server.py
+IDEA additional info:
+Subsystem: com.intellij.openapi.diff.impl.patch.BaseRevisionTextPatchEP
+<+>from fastapi import FastAPI, HTTPException\r\nfrom pydantic import BaseModel\r\nfrom naive_bayes.app import App\r\nimport uvicorn\r\nimport sys\r\nimport os\r\n\r\nsys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))\r\napp = FastAPI()\r\ndata_app = App()\r\n\r\nclass FileRequest(BaseModel):\r\n    file_name: str\r\n\r\nclass LabelRequest(BaseModel):\r\n    target_column: str\r\n\r\nclass RecordRequest(BaseModel):\r\n    record: dict\r\n\r\n@app.get(\"/\")\r\nasync def root():\r\n    \"\"\"Root endpoint to verify that the API is running.\r\n\r\n    Usage:\r\n        curl http://localhost:8000/\r\n    \"\"\"\r\n    return {\"message\": \"Welcome to the Naive Bayes Classifier API\"}\r\n\r\n@app.get(\"/available_files\")\r\nasync def available_files():\r\n    \"\"\"Get a list of available CSV files.\r\n\r\n    Returns:\r\n        dict: List of file names.\r\n\r\n    Usage:\r\n        curl http://localhost:8000/available_files\r\n    \"\"\"\r\n    files = data_app.list_available_files()\r\n    if not files:\r\n        raise HTTPException(status_code=404, detail=\"No CSV files found.\")\r\n    return {\"files\": files}\r\n\r\n@app.post(\"/load_file\")\r\nasync def load_file(req: FileRequest):\r\n    \"\"\"Load the selected file and return available columns.\r\n\r\n    Args:\r\n        req (FileRequest): Request containing file_name.\r\n    Returns:\r\n        dict: Status and list of columns.\r\n\r\n    Usage:\r\n        curl -X POST -H \"Content-Type: application/json\" \\\r\n            -d '{\"file_name\": \"data.csv\"}' http://localhost:8000/load_file\r\n    \"\"\"\r\n    try:\r\n        result = data_app.load_and_clean(req.file_name)\r\n        return result\r\n    except FileNotFoundError as e:\r\n        raise HTTPException(status_code=404, detail=str(e))\r\n    except Exception as e:\r\n        raise HTTPException(status_code=400, detail=str(e))\r\n\r\n@app.post(\"/set_target_column\")\r\nasync def set_target_column(req: LabelRequest):\r\n    \"\"\"Set the target column for labels.\r\n\r\n    Args:\r\n        req (LabelRequest): Request containing target_column.\r\n\r\n    Returns:\r\n        dict: Status message.\r\n\r\n    Usage:\r\n        curl -X POST -H \"Content-Type: application/json\" \\\r\n            -d '{\"target_column\": \"label\"}' http://localhost:8000/set_target_column\r\n    \"\"\"\r\n    try:\r\n        result = data_app.set_target_column(req.target_column)\r\n        return result\r\n    except ValueError as e:\r\n        raise HTTPException(status_code=400, detail=str(e))\r\n\r\n@app.get(\"/features\")\r\nasync def get_features():\r\n    \"\"\"Get feature columns (excluding target) with unique values.\r\n\r\n    Returns:\r\n        dict: Mapping from feature names to unique values.\r\n\r\n    Usage:\r\n        curl http://localhost:8000/features\r\n    \"\"\"\r\n    try:\r\n        return data_app.get_features_with_values()\r\n    except Exception as e:\r\n        raise HTTPException(status_code=400, detail=str(e))\r\n\r\n@app.post(\"/train\")\r\nasync def train_model():\r\n    \"\"\"Train the model using the selected target column.\r\n\r\n    Returns:\r\n        dict: Status message.\r\n\r\n    Usage:\r\n        curl -X POST http://localhost:8000/train\r\n    \"\"\"\r\n    try:\r\n        return data_app.train_model()\r\n    except Exception as e:\r\n        raise HTTPException(status_code=400, detail=str(e))\r\n\r\n@app.get(\"/accuracy\")\r\nasync def get_accuracy():\r\n    \"\"\"Get the accuracy of the trained model.\r\n\r\n    Returns:\r\n        dict: Accuracy score.\r\n\r\n    Usage:\r\n        curl http://localhost:8000/accuracy\r\n    \"\"\"\r\n    try:\r\n        return data_app.evaluate_model()\r\n    except Exception as e:\r\n        raise HTTPException(status_code=400, detail=str(e))\r\n\r\n@app.post(\"/predict\")\r\nasync def predict(req: RecordRequest):\r\n    \"\"\"Predict the class of a new record.\r\n\r\n    Args:\r\n        req (RecordRequest): Request containing record dictionary.\r\n\r\n    Returns:\r\n        dict: Prediction result.\r\n\r\n    Usage:\r\n        curl -X POST -H \"Content-Type: application/json\" \\\r\n            -d '{\"record\": {\"feature\": \"value\"}}' http://localhost:8000/predict\r\n    \"\"\"\r\n    try:\r\n        return data_app.classify_record(req.record)\r\n    except Exception as e:\r\n        raise HTTPException(status_code=400, detail=str(e))\r\n\r\nif __name__ == \"__main__\":\r\n\r\n    uvicorn.run(\"src.server:app\", host=\"127.0.0.1\", port=8000, reload=True)\r\n
+Subsystem: com.intellij.openapi.diff.impl.patch.CharsetEP
+<+>UTF-8
+===================================================================
+diff --git a/src/server.py b/src/server.py
+--- a/src/server.py	(revision 2efc06a3c54b1083336ed57f029b7b2a53eb8d60)
++++ b/src/server.py	(date 1753173187570)
+@@ -2,10 +2,7 @@
+ from pydantic import BaseModel
+ from naive_bayes.app import App
+ import uvicorn
+-import sys
+-import os
+ 
+-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
+ app = FastAPI()
+ data_app = App()
+ 
+@@ -18,85 +15,7 @@
+ class RecordRequest(BaseModel):
+     record: dict
+ 
+-@app.get("/")
+-async def root():
+-    """Root endpoint to verify that the API is running.
+-
+-    Usage:
+-        curl http://localhost:8000/
+-    """
+-    return {"message": "Welcome to the Naive Bayes Classifier API"}
+-
+-@app.get("/available_files")
+-async def available_files():
+-    """Get a list of available CSV files.
+-
+-    Returns:
+-        dict: List of file names.
+ 
+-    Usage:
+-        curl http://localhost:8000/available_files
+-    """
+-    files = data_app.list_available_files()
+-    if not files:
+-        raise HTTPException(status_code=404, detail="No CSV files found.")
+-    return {"files": files}
+-
+-@app.post("/load_file")
+-async def load_file(req: FileRequest):
+-    """Load the selected file and return available columns.
+-
+-    Args:
+-        req (FileRequest): Request containing file_name.
+-    Returns:
+-        dict: Status and list of columns.
+-
+-    Usage:
+-        curl -X POST -H "Content-Type: application/json" \
+-            -d '{"file_name": "data.csv"}' http://localhost:8000/load_file
+-    """
+-    try:
+-        result = data_app.load_and_clean(req.file_name)
+-        return result
+-    except FileNotFoundError as e:
+-        raise HTTPException(status_code=404, detail=str(e))
+-    except Exception as e:
+-        raise HTTPException(status_code=400, detail=str(e))
+-
+-@app.post("/set_target_column")
+-async def set_target_column(req: LabelRequest):
+-    """Set the target column for labels.
+-
+-    Args:
+-        req (LabelRequest): Request containing target_column.
+-
+-    Returns:
+-        dict: Status message.
+-
+-    Usage:
+-        curl -X POST -H "Content-Type: application/json" \
+-            -d '{"target_column": "label"}' http://localhost:8000/set_target_column
+-    """
+-    try:
+-        result = data_app.set_target_column(req.target_column)
+-        return result
+-    except ValueError as e:
+-        raise HTTPException(status_code=400, detail=str(e))
+-
+-@app.get("/features")
+-async def get_features():
+-    """Get feature columns (excluding target) with unique values.
+-
+-    Returns:
+-        dict: Mapping from feature names to unique values.
+-
+-    Usage:
+-        curl http://localhost:8000/features
+-    """
+-    try:
+-        return data_app.get_features_with_values()
+-    except Exception as e:
+-        raise HTTPException(status_code=400, detail=str(e))
+ 
+ @app.post("/train")
+ async def train_model():

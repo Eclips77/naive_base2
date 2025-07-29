@@ -12,156 +12,123 @@ data_app = App()
 # Automatically load data and train the model when the server starts
 @app.on_event("startup")
 async def startup_event():
-    """Load data, set the target column and train the model on startup."""
-    # Default CSV file name can be overridden with DATA_FILE environment variable
-    file_name = os.getenv("DATA_FILE", "play_tennis.csv")
+    """Load tennis data, clean it, set target column and train the model on startup."""
+    file_name = "play_tennis.csv"
     try:
-        # Load and clean the dataset
-        data_app.load_and_clean(file_name)
-        # Use the last column as the target by default
-        target = data_app.train_df.columns[-1]
-        data_app.set_target_column(target)
-        # Train the model so the API is ready to serve predictions
-        data_app.train_model()
+        print(f"Loading {file_name}...")
+        # Load and clean the tennis dataset
+        result = data_app.load_and_clean(file_name)
+        print(f"Data loaded successfully with columns: {result['columns']}")
+        
+        # Use the last column (Play) as the target
+        if data_app.train_df is not None:
+            target = data_app.train_df.columns[-1]
+            data_app.set_target_column(target)
+            print(f"Target column set to: {target}")
+        else:
+            raise Exception("Failed to load training data")
+        
+        # Train the model
+        train_result = data_app.train_model()
+        print(f"Model training completed: {train_result['message']}")
+        
+        # Show model accuracy
+        accuracy_result = data_app.evaluate_model()
+        print(f"Model accuracy: {accuracy_result['accuracy']:.2%}")
+        
+        # Show available features for predictions
+        features = data_app.get_features_with_values()
+        print(f"Available features for prediction: {list(features.keys())}")
+        print("API is ready to serve predictions!")
+        
     except Exception as e:
-        # Log any issue during startup but allow the server to keep running
-        print(f"Failed to initialise model: {e}")
-
-class FileRequest(BaseModel):
-    file_name: str
-
-class LabelRequest(BaseModel):
-    target_column: str
+        print(f"Failed to initialize model: {e}")
+        raise e
 
 class RecordRequest(BaseModel):
     record: dict
 
 @app.get("/")
 async def root():
-    """Root endpoint to verify that the API is running.
+    """Root endpoint to verify that the API is running and show model info.
+
+    Returns:
+        dict: Welcome message and model status.
 
     Usage:
         curl http://localhost:8000/
     """
-    return {"message": "Welcome to the Naive Bayes Classifier API"}
-
-@app.get("/available_files")
-async def available_files():
-    """Get a list of available CSV files.
-
-    Returns:
-        dict: List of file names.
-
-    Usage:
-        curl http://localhost:8000/available_files
-    """
-    files = data_app.list_available_files()
-    if not files:
-        raise HTTPException(status_code=404, detail="No CSV files found.")
-    return {"files": files}
-
-@app.post("/load_file")
-async def load_file(req: FileRequest):
-    """Load the selected file and return available columns.
-
-    Args:
-        req (FileRequest): Request containing file_name.
-    Returns:
-        dict: Status and list of columns.
-
-    Usage:
-        curl -X POST -H "Content-Type: application/json" \
-            -d '{"file_name": "data.csv"}' http://localhost:8000/load_file
-    """
     try:
-        result = data_app.load_and_clean(req.file_name)
-        return result
-    except FileNotFoundError as e:
-        raise HTTPException(status_code=404, detail=str(e))
+        # Get available features for user reference
+        features = data_app.get_features_with_values()
+        accuracy = data_app.evaluate_model()
+        
+        return {
+            "message": "Welcome to the Tennis Naive Bayes Predictor API",
+            "model_status": "Ready",
+            "accuracy": f"{accuracy['accuracy']:.2%}",
+            "available_features": features,
+            "usage": "Send POST request to /predict with a record containing feature values"
+        }
     except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-@app.post("/set_target_column")
-async def set_target_column(req: LabelRequest):
-    """Set the target column for labels.
-
-    Args:
-        req (LabelRequest): Request containing target_column.
-
-    Returns:
-        dict: Status message.
-
-    Usage:
-        curl -X POST -H "Content-Type: application/json" \
-            -d '{"target_column": "label"}' http://localhost:8000/set_target_column
-    """
-    try:
-        result = data_app.set_target_column(req.target_column)
-        return result
-    except ValueError as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-@app.get("/features")
-async def get_features():
-    """Get feature columns (excluding target) with unique values.
-
-    Returns:
-        dict: Mapping from feature names to unique values.
-
-    Usage:
-        curl http://localhost:8000/features
-    """
-    try:
-        return data_app.get_features_with_values()
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-@app.post("/train")
-async def train_model():
-    """Train the model using the selected target column.
-
-    Returns:
-        dict: Status message.
-
-    Usage:
-        curl -X POST http://localhost:8000/train
-    """
-    try:
-        return data_app.train_model()
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
-
-@app.get("/accuracy")
-async def get_accuracy():
-    """Get the accuracy of the trained model.
-
-    Returns:
-        dict: Accuracy score.
-
-    Usage:
-        curl http://localhost:8000/accuracy
-    """
-    try:
-        return data_app.evaluate_model()
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=str(e))
+        return {
+            "message": "Welcome to the Tennis Naive Bayes Predictor API",
+            "model_status": "Error",
+            "error": str(e)
+        }
 
 @app.post("/predict")
 async def predict(req: RecordRequest):
-    """Predict the class of a new record.
+    """Predict whether tennis will be played based on weather conditions.
 
     Args:
-        req (RecordRequest): Request containing record dictionary.
+        req (RecordRequest): Request containing record dictionary with weather features.
 
     Returns:
         dict: Prediction result.
 
-    Usage:
+    Example usage:
         curl -X POST -H "Content-Type: application/json" \
-            -d '{"record": {"feature": "value"}}' http://localhost:8000/predict
+            -d '{"record": {"Outlook": "Sunny", "Temperature": "Hot", "Humidity": "High", "Wind": "Weak"}}' \
+            http://localhost:8000/predict
     """
     try:
-        return data_app.classify_record(req.record)
+        result = data_app.classify_record(req.record)
+        
+        # Add confidence and feature validation
+        features = data_app.get_features_with_values()
+        
+        # Validate that all required features are provided
+        missing_features = []
+        for feature in features.keys():
+            if feature not in req.record:
+                missing_features.append(feature)
+        
+        if missing_features:
+            return {
+                "error": f"Missing required features: {missing_features}",
+                "required_features": features
+            }
+        
+        # Validate feature values
+        invalid_values = []
+        for feature, value in req.record.items():
+            if feature in features and value not in features[feature]:
+                invalid_values.append(f"{feature}: '{value}' (valid: {features[feature]})")
+        
+        if invalid_values:
+            return {
+                "error": f"Invalid feature values: {invalid_values}",
+                "provided_record": req.record,
+                "valid_features": features
+            }
+        
+        return {
+            "prediction": result["prediction"],
+            "input_record": req.record,
+            "message": f"Prediction: {'Play tennis' if result['prediction'] == 'Yes' else 'Do not play tennis'}"
+        }
+        
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
