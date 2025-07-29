@@ -1,11 +1,11 @@
+import sys
+import os
+sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from naive_bayes.app import App
 import uvicorn
-import sys
-import os
 
-sys.path.append(os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 app = FastAPI()
 data_app = App()
 
@@ -132,6 +132,4 @@ async def predict(req: RecordRequest):
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
 
-if __name__ == "__main__":
 
-    uvicorn.run("src.server:app", host="127.0.0.1", port=8000, reload=True)
